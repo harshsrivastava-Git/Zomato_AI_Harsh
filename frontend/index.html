@@ -1,0 +1,718 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TableMate AI — Restaurant Recommender</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:          #0f1117;
+      --surface:     #1a1d27;
+      --surface2:    #22263a;
+      --border:      #2e3347;
+      --accent:      #c0392b;
+      --accent-h:    #e74c3c;
+      --gold:        #f1c40f;
+      --text:        #e8eaf0;
+      --muted:       #7b82a0;
+      --success:     #27ae60;
+      --radius:      12px;
+      --radius-sm:   8px;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── Header ───────────────────────────────────────────── */
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 28px;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .logo-icon {
+      width: 34px; height: 34px;
+      background: linear-gradient(135deg, var(--accent), #8e1a14);
+      border-radius: var(--radius-sm);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px;
+    }
+    .logo-text h1 { font-size: 17px; font-weight: 700; letter-spacing: -.3px; }
+    .logo-text p  { font-size: 12px; color: var(--muted); }
+
+    .header-badge {
+      display: flex; align-items: center; gap: 6px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 6px 14px;
+      font-size: 13px; font-weight: 500;
+      color: var(--gold);
+    }
+    .badge-dot {
+      width: 8px; height: 8px;
+      background: var(--gold);
+      border-radius: 50%;
+      animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50%       { opacity: .5; transform: scale(1.3); }
+    }
+
+    /* ── Layout ───────────────────────────────────────────── */
+    .main {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 420px 1fr;
+      min-height: 0;
+    }
+
+    /* ── Left Panel ───────────────────────────────────────── */
+    .panel-left {
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      padding: 28px 24px;
+      overflow-y: auto;
+      display: flex; flex-direction: column; gap: 24px;
+    }
+
+    .panel-title {
+      font-size: 22px; font-weight: 700;
+      line-height: 1.3;
+    }
+
+    .field { display: flex; flex-direction: column; gap: 8px; }
+    .field label {
+      font-size: 13px; font-weight: 600;
+      color: var(--muted); text-transform: uppercase; letter-spacing: .5px;
+    }
+
+    /* Location input */
+    .input-wrap {
+      position: relative;
+    }
+    .input-wrap .icon {
+      position: absolute; left: 12px; top: 50%; transform: translateY(-50%);
+      color: var(--muted); font-size: 16px;
+    }
+    .input-wrap input, .input-wrap select {
+      width: 100%;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      color: var(--text);
+      font-family: inherit; font-size: 14px;
+      padding: 11px 12px 11px 38px;
+      outline: none;
+      transition: border-color .2s;
+      appearance: none;
+    }
+    .input-wrap input:focus, .input-wrap select:focus {
+      border-color: var(--accent);
+    }
+    .input-wrap input::placeholder { color: var(--muted); }
+
+    /* Datalist dropdown */
+    #location-list option { background: var(--surface2); color: var(--text); }
+
+    /* Budget toggles */
+    .budget-group {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;
+    }
+    .budget-btn {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      color: var(--muted);
+      font-family: inherit; font-size: 13px; font-weight: 500;
+      padding: 10px 4px; cursor: pointer;
+      transition: all .2s; text-align: center;
+    }
+    .budget-btn:hover   { border-color: var(--accent); color: var(--text); }
+    .budget-btn.active  {
+      background: rgba(192,57,43,.18);
+      border-color: var(--accent);
+      color: var(--text);
+      font-weight: 600;
+    }
+
+    /* Cuisine select */
+    .cuisine-hint {
+      font-size: 13px; color: var(--muted);
+      padding: 10px 12px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+    }
+
+    /* Rating slider */
+    .slider-row {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 4px;
+    }
+    .rating-badge {
+      font-size: 13px; font-weight: 600; color: var(--gold);
+    }
+    input[type=range] {
+      -webkit-appearance: none;
+      width: 100%; height: 4px;
+      background: var(--border);
+      border-radius: 4px; outline: none;
+    }
+    input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 20px; height: 20px;
+      background: var(--accent);
+      border-radius: 50%; cursor: pointer;
+      box-shadow: 0 0 0 4px rgba(192,57,43,.2);
+      transition: box-shadow .2s;
+    }
+    input[type=range]::-webkit-slider-thumb:hover {
+      box-shadow: 0 0 0 7px rgba(192,57,43,.25);
+    }
+
+    /* Checkboxes */
+    .checks { display: flex; flex-direction: column; gap: 10px; }
+    .check-item {
+      display: flex; align-items: center; gap: 10px;
+      cursor: pointer; font-size: 14px; user-select: none;
+    }
+    .check-item input[type=checkbox] {
+      width: 17px; height: 17px; accent-color: var(--accent);
+      cursor: pointer;
+    }
+
+    /* CTA button */
+    .btn-recommend {
+      width: 100%;
+      background: linear-gradient(135deg, var(--accent), #8e1a14);
+      border: none; border-radius: var(--radius-sm);
+      color: #fff; font-family: inherit; font-size: 15px; font-weight: 600;
+      padding: 14px;
+      cursor: pointer; letter-spacing: .2px;
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+      transition: opacity .2s, transform .15s;
+      margin-top: 4px;
+    }
+    .btn-recommend:hover:not(:disabled) { opacity: .9; transform: translateY(-1px); }
+    .btn-recommend:disabled { opacity: .5; cursor: not-allowed; transform: none; }
+
+    /* ── Right Panel ──────────────────────────────────────── */
+    .panel-right {
+      padding: 32px;
+      overflow-y: auto;
+      display: flex; flex-direction: column; gap: 18px;
+    }
+
+    /* Empty state */
+    .empty-state {
+      flex: 1;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      gap: 16px; color: var(--muted);
+      min-height: 400px;
+    }
+    .empty-icon { font-size: 56px; opacity: .4; }
+    .empty-state p { font-size: 15px; }
+
+    /* Loading spinner */
+    .loading-state {
+      flex: 1;
+      display: none; flex-direction: column;
+      align-items: center; justify-content: center;
+      gap: 18px; min-height: 400px;
+    }
+    .spinner {
+      width: 44px; height: 44px;
+      border: 4px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin .8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .loading-state p { font-size: 14px; color: var(--muted); }
+
+    /* Error banner */
+    .error-banner {
+      display: none;
+      background: rgba(192,57,43,.15);
+      border: 1px solid var(--accent);
+      border-radius: var(--radius-sm);
+      padding: 14px 18px;
+      font-size: 14px; color: #e87c6e;
+    }
+
+    /* Results header */
+    .results-header {
+      display: none;
+      align-items: center; justify-content: space-between;
+    }
+    .results-header h2 { font-size: 18px; font-weight: 700; }
+    .source-badge {
+      font-size: 12px; font-weight: 600; letter-spacing: .4px;
+      padding: 4px 10px; border-radius: 20px;
+      background: rgba(39,174,96,.15); color: #2ecc71;
+      border: 1px solid rgba(39,174,96,.3);
+    }
+    .source-badge.fallback {
+      background: rgba(241,196,15,.1); color: var(--gold);
+      border-color: rgba(241,196,15,.3);
+    }
+
+    /* Recommendation card */
+    .rec-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px 22px;
+      display: flex; flex-direction: column; gap: 12px;
+      animation: fadeUp .3s ease both;
+      transition: border-color .2s, box-shadow .2s;
+    }
+    .rec-card:hover {
+      border-color: rgba(192,57,43,.5);
+      box-shadow: 0 4px 20px rgba(0,0,0,.3);
+    }
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(14px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .rec-card:nth-child(2) { animation-delay: .07s; }
+    .rec-card:nth-child(3) { animation-delay: .14s; }
+    .rec-card:nth-child(4) { animation-delay: .21s; }
+    .rec-card:nth-child(5) { animation-delay: .28s; }
+
+    .card-top {
+      display: flex; align-items: flex-start;
+      justify-content: space-between; gap: 12px;
+    }
+    .rank-name { display: flex; align-items: center; gap: 10px; }
+    .rank-badge {
+      font-size: 11px; font-weight: 700;
+      background: rgba(192,57,43,.2);
+      color: var(--accent);
+      border: 1px solid rgba(192,57,43,.4);
+      border-radius: 6px;
+      padding: 3px 8px;
+      white-space: nowrap;
+    }
+    .rank-badge.top1 {
+      background: rgba(241,196,15,.15);
+      color: var(--gold);
+      border-color: rgba(241,196,15,.4);
+    }
+    .card-name { font-size: 17px; font-weight: 700; }
+
+    .card-rating {
+      display: flex; align-items: center; gap: 5px;
+      white-space: nowrap;
+    }
+    .stars { color: var(--gold); font-size: 14px; }
+    .rating-val { font-size: 14px; font-weight: 600; }
+    .votes { font-size: 12px; color: var(--muted); }
+
+    .card-meta {
+      display: flex; flex-wrap: wrap; gap: 8px;
+    }
+    .meta-pill {
+      font-size: 12px; font-weight: 500;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 4px 10px; color: var(--muted);
+      display: flex; align-items: center; gap: 5px;
+    }
+    .meta-pill.cost  { color: #2ecc71; border-color: rgba(39,174,96,.3); }
+    .meta-pill.online { color: #3498db; border-color: rgba(52,152,219,.3); }
+    .meta-pill.book   { color: #9b59b6; border-color: rgba(155,89,182,.3); }
+
+    .ai-note {
+      background: var(--surface2);
+      border-left: 3px solid var(--accent);
+      border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+      padding: 12px 14px;
+      font-size: 13px; line-height: 1.6;
+      color: #c8ccdc;
+    }
+    .ai-note-label {
+      font-size: 11px; font-weight: 700;
+      color: var(--accent); letter-spacing: .6px;
+      margin-bottom: 4px;
+    }
+
+    .caveat-text {
+      font-size: 12px; color: var(--muted);
+      font-style: italic;
+      padding: 0 2px;
+    }
+    .caveat-label { font-weight: 600; color: var(--gold); }
+
+    /* Filter info bar */
+    .filter-bar {
+      display: none;
+      background: rgba(39,174,96,.08);
+      border: 1px solid rgba(39,174,96,.2);
+      border-radius: var(--radius-sm);
+      padding: 10px 16px;
+      font-size: 13px; color: #2ecc71;
+    }
+
+    @media (max-width: 800px) {
+      .main { grid-template-columns: 1fr; }
+      .panel-left { border-right: none; border-bottom: 1px solid var(--border); }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Header -->
+<header>
+  <div class="logo">
+    <div class="logo-icon">🍽️</div>
+    <div class="logo-text">
+      <h1>TableMate AI</h1>
+      <p>Find your next meal with AI-curated picks</p>
+    </div>
+  </div>
+  <div class="header-badge">
+    <div class="badge-dot"></div>
+    <span id="rest-count">51,672+ restaurants indexed</span>
+  </div>
+</header>
+
+<!-- Main Layout -->
+<div class="main">
+
+  <!-- ── Left Panel: Form ───────────────────────────────── -->
+  <div class="panel-left">
+    <p class="panel-title">What are you in the mood for?</p>
+
+    <!-- Location -->
+    <div class="field">
+      <label>Location</label>
+      <div class="input-wrap">
+        <span class="icon">📍</span>
+        <input id="location-input" list="location-list"
+               placeholder="Search localities..." autocomplete="off" />
+        <datalist id="location-list"></datalist>
+      </div>
+    </div>
+
+    <!-- Budget -->
+    <div class="field">
+      <label>Budget for two</label>
+      <div class="budget-group">
+        <button class="budget-btn" data-val="low">Low<br><small style="opacity:.7">≤ ₹400</small></button>
+        <button class="budget-btn active" data-val="medium">Medium<br><small style="opacity:.7">₹401–₹800</small></button>
+        <button class="budget-btn" data-val="high">High<br><small style="opacity:.7">> ₹800</small></button>
+      </div>
+    </div>
+
+    <!-- Cuisines -->
+    <div class="field">
+      <label>Cuisine</label>
+      <div id="cuisine-wrap" class="input-wrap" style="display:none">
+        <span class="icon">🍜</span>
+        <select id="cuisine-select">
+          <option value="">Any cuisine</option>
+        </select>
+      </div>
+      <div id="cuisine-hint" class="cuisine-hint">Select a location to load cuisines.</div>
+    </div>
+
+    <!-- Rating -->
+    <div class="field">
+      <div class="slider-row">
+        <label>Minimum Rating</label>
+        <span class="rating-badge">⭐ <span id="rating-display">3.5</span>+</span>
+      </div>
+      <input type="range" id="rating-slider" min="0" max="5" step="0.5" value="3.5" />
+    </div>
+
+    <!-- Preferences -->
+    <div class="field">
+      <label>Preferences</label>
+      <div class="checks">
+        <label class="check-item">
+          <input type="checkbox" id="pref-family" value="family-friendly" />
+          Family-friendly
+        </label>
+        <label class="check-item">
+          <input type="checkbox" id="pref-quick" value="quick service" />
+          Quick service
+        </label>
+        <label class="check-item">
+          <input type="checkbox" id="pref-outdoor" value="outdoor seating" />
+          Outdoor seating
+        </label>
+        <label class="check-item">
+          <input type="checkbox" id="pref-rooftop" value="rooftop" />
+          Rooftop
+        </label>
+      </div>
+    </div>
+
+    <button class="btn-recommend" id="btn-get" onclick="getRecommendations()">
+      🍴 Get Recommendations
+    </button>
+  </div>
+
+  <!-- ── Right Panel: Results ───────────────────────────── -->
+  <div class="panel-right" id="panel-right">
+
+    <!-- Empty state -->
+    <div class="empty-state" id="empty-state">
+      <div class="empty-icon">🔍</div>
+      <p>Set your preferences and hit <strong>Get Recommendations</strong></p>
+    </div>
+
+    <!-- Loading state -->
+    <div class="loading-state" id="loading-state">
+      <div class="spinner"></div>
+      <p>Asking Groq AI for the best picks…</p>
+    </div>
+
+    <!-- Error -->
+    <div class="error-banner" id="error-banner"></div>
+
+    <!-- Results header -->
+    <div class="results-header" id="results-header">
+      <h2>Your Recommendations</h2>
+      <span class="source-badge" id="source-badge">AI-Powered</span>
+    </div>
+
+    <!-- Filter info -->
+    <div class="filter-bar" id="filter-bar"></div>
+
+    <!-- Cards container -->
+    <div id="cards-container"></div>
+
+  </div>
+</div>
+
+<script>
+  const API = 'http://localhost:8000';
+  let selectedBudget = 'medium';
+
+  // ── On Load ──────────────────────────────────────────────
+  window.addEventListener('DOMContentLoaded', async () => {
+    await loadLocations();
+    setupBudgetButtons();
+    setupRatingSlider();
+  });
+
+  // ── Load locations into datalist ─────────────────────────
+  async function loadLocations() {
+    try {
+      const res = await fetch(`${API}/locations?limit=200`);
+      const data = await res.json();
+      const dl = document.getElementById('location-list');
+      data.locations.forEach(loc => {
+        const opt = document.createElement('option');
+        opt.value = loc;
+        dl.appendChild(opt);
+      });
+    } catch(e) { console.warn('Could not load locations', e); }
+  }
+
+  // ── Load cuisines when location changes ──────────────────
+  document.getElementById('location-input').addEventListener('change', loadCuisines);
+  document.getElementById('location-input').addEventListener('input', debounce(loadCuisines, 600));
+
+  async function loadCuisines() {
+    const loc = document.getElementById('location-input').value.trim();
+    if (!loc) return;
+    try {
+      const res  = await fetch(`${API}/cuisines?limit=200`);
+      const data = await res.json();
+      const sel  = document.getElementById('cuisine-select');
+      sel.innerHTML = '<option value="">Any cuisine</option>';
+      data.cuisines.forEach(c => {
+        const opt = document.createElement('option');
+        opt.value = c;
+        opt.textContent = c.charAt(0).toUpperCase() + c.slice(1);
+        sel.appendChild(opt);
+      });
+      document.getElementById('cuisine-hint').style.display  = 'none';
+      document.getElementById('cuisine-wrap').style.display  = 'block';
+    } catch(e) { console.warn('Could not load cuisines', e); }
+  }
+
+  // ── Budget buttons ───────────────────────────────────────
+  function setupBudgetButtons() {
+    document.querySelectorAll('.budget-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.budget-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        selectedBudget = btn.dataset.val;
+      });
+    });
+  }
+
+  // ── Rating slider ────────────────────────────────────────
+  function setupRatingSlider() {
+    const slider  = document.getElementById('rating-slider');
+    const display = document.getElementById('rating-display');
+    slider.addEventListener('input', () => { display.textContent = slider.value; });
+  }
+
+  // ── Main: Get Recommendations ────────────────────────────
+  async function getRecommendations() {
+    const location  = document.getElementById('location-input').value.trim();
+    const cuisine   = document.getElementById('cuisine-select')?.value || '';
+    const minRating = parseFloat(document.getElementById('rating-slider').value);
+    const prefs     = [...document.querySelectorAll('.check-item input:checked')]
+                        .map(c => c.value);
+
+    if (!location) {
+      showError('Please enter a location first.');
+      return;
+    }
+
+    setLoadingState(true);
+    hideError();
+
+    const body = { location, budget: selectedBudget, cuisine, min_rating: minRating, preferences: prefs };
+
+    try {
+      const res  = await fetch(`${API}/recommend`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      });
+
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.detail || `Error ${res.status}`);
+      }
+
+      const data = await res.json();
+      renderResults(data);
+
+    } catch(e) {
+      showError(`Could not get recommendations: ${e.message}`);
+      setLoadingState(false);
+    }
+  }
+
+  // ── Render result cards ──────────────────────────────────
+  function renderResults(data) {
+    setLoadingState(false);
+
+    // Header
+    const header = document.getElementById('results-header');
+    header.style.display = 'flex';
+
+    const badge = document.getElementById('source-badge');
+    badge.textContent = data.source === 'llm' ? '✦ AI-Powered' : '⚡ Rule-Based';
+    badge.className   = 'source-badge' + (data.source !== 'llm' ? ' fallback' : '');
+
+    // Filter bar
+    const fb = document.getElementById('filter-bar');
+    fb.style.display = 'block';
+    fb.textContent   = `✓  ${data.filter_message}`;
+
+    // Cards
+    const container = document.getElementById('cards-container');
+    container.innerHTML = '';
+
+    data.recommendations.forEach((r, i) => {
+      container.appendChild(buildCard(r, i));
+    });
+  }
+
+  function buildCard(r, idx) {
+    const card = document.createElement('div');
+    card.className = 'rec-card';
+    card.style.animationDelay = `${idx * 0.08}s`;
+
+    const isTop = r.rank === 1;
+
+    // Rating stars
+    const fullStars = Math.round(r.aggregate_rating || 0);
+    const stars = '★'.repeat(Math.min(fullStars, 5)) + '☆'.repeat(Math.max(0, 5 - fullStars));
+
+    // Pills
+    const pills = [];
+    if (r.approx_cost)      pills.push(`<span class="meta-pill cost">💰 ₹${r.approx_cost} for two</span>`);
+    if (r.cuisines)         pills.push(`<span class="meta-pill">🍽️ ${capitalize(r.cuisines.split(',')[0].trim())}</span>`);
+    if (r.online_order === 'Yes') pills.push(`<span class="meta-pill online">📱 Online Order</span>`);
+    if (r.book_table   === 'Yes') pills.push(`<span class="meta-pill book">📅 Table Booking</span>`);
+
+    // Caveat
+    const hasCaveat = r.caveat && !['none noted.', 'none.', 'n/a'].includes(r.caveat.toLowerCase());
+
+    card.innerHTML = `
+      <div class="card-top">
+        <div class="rank-name">
+          <span class="rank-badge ${isTop ? 'top1' : ''}">${isTop ? '🏅 Top Pick' : `#${r.rank}`}</span>
+          <span class="card-name">${capitalize(r.name)}</span>
+        </div>
+        <div class="card-rating">
+          <span class="stars">${stars}</span>
+          <span class="rating-val">${r.aggregate_rating ?? 'N/A'}</span>
+          <span class="votes">(${Number(r.votes || 0).toLocaleString()} votes)</span>
+        </div>
+      </div>
+      <div class="card-meta">${pills.join('')}</div>
+      ${r.explanation && r.explanation !== 'See restaurant details above.' ? `
+      <div class="ai-note">
+        <div class="ai-note-label">✦ AI INSIGHT</div>
+        ${escHtml(r.explanation)}
+      </div>` : ''}
+      ${hasCaveat ? `<p class="caveat-text"><span class="caveat-label">Note: </span>${escHtml(r.caveat)}</p>` : ''}
+    `;
+    return card;
+  }
+
+  // ── UI Helpers ───────────────────────────────────────────
+  function setLoadingState(on) {
+    document.getElementById('empty-state').style.display    = on ? 'none' : 'none';
+    document.getElementById('loading-state').style.display  = on ? 'flex' : 'none';
+    document.getElementById('results-header').style.display = on ? 'none' : (on === false && document.getElementById('cards-container').innerHTML ? 'flex' : 'none');
+    document.getElementById('btn-get').disabled = on;
+    if (on) {
+      document.getElementById('cards-container').innerHTML = '';
+      document.getElementById('filter-bar').style.display = 'none';
+      document.getElementById('results-header').style.display = 'none';
+    }
+  }
+
+  function showError(msg) {
+    const b = document.getElementById('error-banner');
+    b.style.display = 'block';
+    b.textContent   = '⚠️  ' + msg;
+    document.getElementById('loading-state').style.display = 'none';
+    document.getElementById('empty-state').style.display   = 'flex';
+  }
+  function hideError() { document.getElementById('error-banner').style.display = 'none'; }
+
+  function capitalize(str) { return str ? str.charAt(0).toUpperCase() + str.slice(1) : ''; }
+  function escHtml(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+  function debounce(fn, ms) {
+    let t; return (...args) => { clearTimeout(t); t = setTimeout(() => fn(...args), ms); };
+  }
+</script>
+</body>
+</html>

@@ -1,0 +1,7 @@
+﻿datasets
+pandas
+python-dotenv
+groq
+fastapi
+uvicorn[standard]
+streamlit
