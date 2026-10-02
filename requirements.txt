@@ -1,4 +1,4 @@
-﻿datasets
+datasets
 pandas
 python-dotenv
 groq

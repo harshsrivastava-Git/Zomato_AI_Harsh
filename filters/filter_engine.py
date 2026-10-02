@@ -1,4 +1,4 @@
-﻿"""
+"""
 filters/filter_engine.py
 Phase 4 -- Filter Engine
 

@@ -1,4 +1,4 @@
-﻿"""
+"""
 output/display_formatter.py
 Phase 7 -- Output Display Layer
 

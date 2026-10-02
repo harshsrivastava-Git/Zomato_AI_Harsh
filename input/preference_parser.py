@@ -1,4 +1,4 @@
-﻿"""
+"""
 input/preference_parser.py
 Phase 3 -- User Input Layer
 

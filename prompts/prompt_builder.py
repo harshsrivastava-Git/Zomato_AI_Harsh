@@ -1,4 +1,4 @@
-﻿"""
+"""
 prompts/prompt_builder.py
 Phase 5 -- Prompt Engineering
 
